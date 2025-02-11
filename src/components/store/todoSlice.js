@@ -37,6 +37,63 @@ export const deleteTodo = createAsyncThunk(
   }
 );
 
+export const toggleStatus = createAsyncThunk(
+  "todos/togglestatus",
+  async function (id, { rejectWithValue, dispatch, getState }) {
+    const todo = getState().todos.todos.find((todo) => todo.id === id);
+    try {
+      const response = await fetch(
+        `https://jsonplaceholder.typicode.com/todos/${id}/`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            completed: !todo.completed,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Can\t toggle status. Server error.");
+      }
+      dispatch(toggleTodoComplete({ id }));
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const addNewTodo = createAsyncThunk(
+  "todo/addNewTodo",
+  async function (text, { rejectWithValue, dispatch }) {
+    try {
+      const todo = {
+        title: text,
+        userId: 1,
+        completed: false,
+      };
+      const response = await fetch(
+        "https://jsonplaceholder.typicode.com/todos/",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "Application/json",
+          },
+          body: JSON.stringify(todo),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Can\t toggle status. Server error.");
+      }
+
+      dispatch(addTodo(data));
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 const setError = (state, action) => {
   state.status = "rejected";
   state.error = action.payload;
@@ -51,11 +108,7 @@ const todoSlice = createSlice({
   },
   reducers: {
     addTodo(state, action) {
-      state.todos.push({
-        id: new Date().toISOString(),
-        title: action.payload.text,
-        completed: false,
-      });
+      state.todos.push(action.payload);
     },
     removeTodo(state, action) {
       state.todos = state.todos.filter((todo) => todo.id !== action.payload.id);
@@ -78,10 +131,11 @@ const todoSlice = createSlice({
         state.todos = action.payload;
       })
       .addCase(fetchTodos.rejected, setError)
-      .addCase(deleteTodo.rejected, setError);
+      .addCase(deleteTodo.rejected, setError)
+      .addCase(toggleStatus.rejected, setError);
   },
 });
 
-export const { addTodo, removeTodo, toggleTodoComplete } = todoSlice.actions;
+const { addTodo, removeTodo, toggleTodoComplete } = todoSlice.actions;
 
 export default todoSlice.reducer;
